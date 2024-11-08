@@ -1,13 +1,22 @@
 package com.example.se331_lab.rest.controller;
-import org.springframework.stereotype.Controller;
+
 import com.example.se331_lab.rest.entity.Event;
 import jakarta.annotation.PostConstruct;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.util.ArrayList;
 import java.util.List;
 
 @Controller
+@CrossOrigin(origins = "http://127.0.0.1:5173") // 允许特定来源的请求
+@RequestMapping("/events")
 public class EventController {
-    List<Event> eventList;
+    private List<Event> eventList;
+
     @PostConstruct
     public void init() {
         eventList = new ArrayList<>();
@@ -80,6 +89,27 @@ public class EventController {
                 .petAllowed(true)
                 .organizer("Art Society")
                 .build());
+    }
 
+    @GetMapping
+    public ResponseEntity<List<Event>> getEventLists(
+            @RequestParam(value = "_limit", required = false) Integer perPage,
+            @RequestParam(value = "_page", required = false) Integer page) {
+        perPage = perPage == null ? eventList.size() : perPage;
+        page = page == null ? 1 : page;
+        int firstIndex = (page - 1) * perPage;
+        int lastIndex = Math.min(firstIndex + perPage, eventList.size());
+        List<Event> output = eventList.subList(firstIndex, lastIndex);
+        return ResponseEntity.ok(output);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Event> getEvent(@PathVariable("id") Long id) {
+        for (Event event : eventList) {
+            if (event.getId().equals(id)) {
+                return ResponseEntity.ok(event);
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "The given id is not found");
     }
 }
