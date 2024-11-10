@@ -2,6 +2,7 @@ package com.example.se331_lab.rest.controller;
 
 import com.example.se331_lab.rest.entity.Event;
 import jakarta.annotation.PostConstruct;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -91,25 +92,46 @@ public class EventController {
                 .build());
     }
 
-    @GetMapping
-    public ResponseEntity<List<Event>> getEventLists(
-            @RequestParam(value = "_limit", required = false) Integer perPage,
-            @RequestParam(value = "_page", required = false) Integer page) {
-        perPage = perPage == null ? eventList.size() : perPage;
-        page = page == null ? 1 : page;
-        int firstIndex = (page - 1) * perPage;
-        int lastIndex = Math.min(firstIndex + perPage, eventList.size());
-        List<Event> output = eventList.subList(firstIndex, lastIndex);
-        return ResponseEntity.ok(output);
+    @GetMapping("events")
+    public ResponseEntity<?> getEventLists(
+            @RequestParam(value = "_limit", required = false)Integer perPage,
+            @RequestParam(value = "_page",required = false)Integer page){
+        perPage = perPage == null?eventList.size():perPage;
+        page = page == null?1:page;
+        Integer firstIndex = (page-1)*perPage;
+        List<Event> output = new ArrayList<>();
+
+        HttpHeaders responseHeader = new HttpHeaders();
+              responseHeader.set("x-total-count", String.valueOf(eventList.size()));
+        for (int i = firstIndex; i < firstIndex + perPage; i++) {
+            output.add(eventList.get(i));
+        }
+        try {
+            for (int i = firstIndex; i < firstIndex + perPage; i++) {
+                output.add(eventList.get(i));
+            }
+            return new ResponseEntity<>(output,responseHeader,HttpStatus.OK);
+        } catch (IndexOutOfBoundsException ex) {
+            return new ResponseEntity<>(output,responseHeader,HttpStatus.OK);
+
+        }
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Event> getEvent(@PathVariable("id") Long id) {
-        for (Event event : eventList) {
+    @GetMapping("events/{id}")
+    public ResponseEntity<?> getEvent(@PathVariable("id") Long id) {
+        Event output = null;
+        for (Event event :
+                eventList) {
             if (event.getId().equals(id)) {
-                return ResponseEntity.ok(event);
+                output = event;
+                break;
             }
         }
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "The given id is not found");
+        if (output != null){
+            return ResponseEntity.ok(output);
+        }else {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,"The given id is not found");
+        }
     }
+
 }
